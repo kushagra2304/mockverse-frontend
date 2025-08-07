@@ -5,13 +5,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@/context/ContextAuth";
 
+const QUESTION_TIME = 30;
+
 const VideoInterview = () => {
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
-  // const mediaRecorderRef = useRef(null);
-  // const audioChunksRef = useRef([]);
   const recognitionRef = useRef(null);
-    const { user } = useAuth();
+  const { user } = useAuth();
 
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
@@ -20,47 +20,70 @@ const VideoInterview = () => {
   const [feedback, setFeedback] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
-  const [recognitionState, setRecognitionState] = useState('idle'); 
+  const [recognitionState, setRecognitionState] = useState('idle');
   const [isGeneratingFeedback, setIsGeneratingFeedback] = useState(false);
+  const [questionTimer, setQuestionTimer] = useState(QUESTION_TIME);
 
   const navigate = useNavigate();
   const location = useLocation();
   const questions = location.state?.questions || [];
 
-  
+  useEffect(() => {
+    if (questions.length === 0) return;
+    setQuestionTimer(QUESTION_TIME); 
+
+    const timerInterval = setInterval(() => {
+      setQuestionTimer((prev) => {
+        if (prev <= 1) {
+          setCurrentQuestionIndex((prevIndex) => {
+            if (prevIndex < questions.length - 1) {
+              return prevIndex + 1;
+            }
+            return prevIndex;
+          });
+          return QUESTION_TIME; 
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [currentQuestionIndex, questions]);
+
   const saveAttempt = async (isCorrect) => {
-  const session_id = location.state?.sessionId;
-const user_id = user?.id;
-const question = questions[currentQuestionIndex];
-const user_answer = transcript;
-const is_correct = typeof isCorrect === "undefined" ? 0 : isCorrect; 
+    const session_id = location.state?.sessionId;
+    const user_id = user?.id;
+    const question = questions[currentQuestionIndex];
+    const user_answer = transcript;
+    const is_correct = typeof isCorrect === "undefined" ? 0 : isCorrect;
 
-console.log("Payload to backend:", {
-    session_id,
-    user_id,
-    question,
-    user_answer,
-    is_correct,
-  });
-
-if (!session_id || !user_id || !question || !user_answer) {
-  alert("Missing required data. Please try again.");
-  return;
-}
-
-  try {
-    await axios.post('https://mockverse-backend-leqo.onrender.com/interview/save-answer', {
+    console.log("Payload to backend:", {
       session_id,
       user_id,
       question,
       user_answer,
-      is_correct, 
+      is_correct,
     });
-    console.log("Attempt saved!");
-  } catch (err) {
-    console.error("Error saving attempt:", err);
-  }
-};
+
+    if (!session_id || !user_id || !question || !user_answer) {
+      alert("Missing required data. Please try again.");
+      return;
+    }
+
+    try {
+      await axios.post('https://mockverse-backend-leqo.onrender.com/interview/save-answer', {
+        session_id,
+        user_id,
+        question,
+        user_answer,
+        is_correct,
+      });
+      console.log("Attempt saved!");
+    } catch (err) {
+      console.error("Error saving attempt:", err);
+    }
+  };
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const speechSupported = SpeechRecognition !== undefined;
   const speakText = (text) => {
@@ -69,6 +92,7 @@ if (!session_id || !user_id || !question || !user_answer) {
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
+
   useEffect(() => {
     const peer = new Peer(uuid());
 
@@ -96,25 +120,6 @@ if (!session_id || !user_id || !question || !user_answer) {
       }
     };
   }, []);
-
-  
-  useEffect(() => {
-    if (questions.length === 0) return;
-
-    const interval = setInterval(() => {
-      setCurrentQuestionIndex((prev) => {
-        if (prev < questions.length - 1) {
-          return prev + 1;
-        } else {
-          clearInterval(interval);
-          return prev;
-        }
-      });
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [questions]);
-
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -163,7 +168,7 @@ if (!session_id || !user_id || !question || !user_answer) {
       console.error("Speech recognition error:", event.error);
       setIsListening(false);
       setRecognitionState('idle');
-      
+
       if (event.error === 'no-speech') {
         console.log("No speech detected, will restart if still recording...");
       } else if (event.error === 'audio-capture') {
@@ -213,16 +218,10 @@ if (!session_id || !user_id || !question || !user_answer) {
           setRecognitionState('idle');
         }
       }
-    }, 500); 
+    }, 500);
 
     return () => clearTimeout(restartTimer);
   }, [recording, recognitionState, speechSupported]);
-
-  // const toggleMic = () => {
-  //   if (!streamRef.current) return;
-  //   streamRef.current.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));
-  //   setMicOn((prev) => !prev);
-  // };
 
   const toggleCamera = () => {
     if (!streamRef.current) return;
@@ -230,17 +229,17 @@ if (!session_id || !user_id || !question || !user_answer) {
     setCameraOn((prev) => !prev);
   };
 
-const endCall = () => {
-  if (streamRef.current) {
-    streamRef.current.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-  }
-  if (recognitionRef.current) {
-    recognitionRef.current.stop();
-  }
-  window.speechSynthesis.cancel();
-  navigate(`/interview/score/${location.state?.sessionId}`);
-};
+  const endCall = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    window.speechSynthesis.cancel();
+    navigate(`/interview/score/${location.state?.sessionId}`);
+  };
 
   const startRecording = () => {
     if (!speechSupported) {
@@ -254,9 +253,9 @@ const endCall = () => {
     }
 
     setRecording(true);
-    setTranscript(""); 
+    setTranscript("");
     setRecognitionState('starting');
-    
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.start();
@@ -271,20 +270,19 @@ const endCall = () => {
   const stopRecording = () => {
     setRecording(false);
     setRecognitionState('stopping');
-    
+
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.abort(); 
+        recognitionRef.current.abort();
       } catch (error) {
         console.log("Error stopping recognition:", error);
       }
     }
 
-    // Reset states
     setTimeout(() => {
       setIsListening(false);
       setRecognitionState('idle');
-      
+
       if (transcript.trim()) {
         generateFeedback(transcript);
       }
@@ -298,32 +296,32 @@ const endCall = () => {
     }
 
     setIsGeneratingFeedback(true);
-    
+
     try {
       console.log("📤 Sending to backend:", {
         question: questions[currentQuestionIndex],
         answer: userAnswer.trim()
       });
-      
+
       const response = await axios.post('https://mockverse-backend-leqo.onrender.com/check-answer', {
-  question: questions[currentQuestionIndex],
-  answer: userAnswer.trim()
-}, {
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  timeout: 30000 
-});
-      
+        question: questions[currentQuestionIndex],
+        answer: userAnswer.trim()
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      });
+
       setFeedback(response.data.feedback);
       console.log("✅ Feedback received:", response.data.feedback);
 
-    const isCorrect = response.data.is_correct ? 1 : 0; 
-    await saveAttempt(isCorrect); 
-      
+      const isCorrect = response.data.is_correct ? 1 : 0;
+      await saveAttempt(isCorrect);
+
     } catch (error) {
       console.error("❌ Error generating feedback:", error);
-      
+
       if (error.response) {
         console.error("Server error:", error.response.status, error.response.data);
         setFeedback(`Server Error (${error.response.status}): ${error.response.data.error || 'Failed to get feedback from server'}`);
@@ -375,12 +373,16 @@ const endCall = () => {
           )}
         </div>
 
-        
         <div className="flex flex-col items-center">
           <div className="w-[400px] h-[300px] rounded-xl border-2 border-white bg-gray-800 flex items-center justify-center text-gray-200 text-lg px-4 text-center">
             {questions.length > 0 ? (
               <div>
-                <p className="mb-2 text-sm text-gray-400">Question {currentQuestionIndex + 1} of {questions.length}</p>
+                <div className="mb-2 text-sm text-gray-400">
+                  ⏳ Time left: <span className="font-bold">{questionTimer}s</span>
+                </div>
+                <p className="mb-2 text-sm text-gray-400">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </p>
                 <p>{questions[currentQuestionIndex]}</p>
               </div>
             ) : (
@@ -391,11 +393,7 @@ const endCall = () => {
         </div>
       </div>
 
-
       <div className="flex gap-4 mt-10">
-        {/* <button onClick={toggleMic} className={`px-4 py-2 rounded ${micOn ? 'bg-gray-800' : 'bg-red-600'}`}>
-          {micOn ? "🎤 Mic On" : "🎤 Mic Off"}
-        </button> */}
         <button onClick={toggleCamera} className={`px-4 py-2 rounded ${cameraOn ? 'bg-gray-800' : 'bg-red-600'}`}>
           {cameraOn ? "📹 Camera On" : "📹 Camera Off"}
         </button>
@@ -411,7 +409,6 @@ const endCall = () => {
         </button>
       </div>
 
-      {/* Current transcript display */}
       {recording && transcript && (
         <div className="mt-4 bg-gray-700 p-3 rounded w-full max-w-4xl">
           <p className="text-sm text-gray-300">Current transcript:</p>
@@ -419,22 +416,21 @@ const endCall = () => {
         </div>
       )}
 
-      {/* Transcript and Feedback */}
       {transcript && !recording && (
         <div className="mt-8 bg-gray-700 p-4 rounded w-full max-w-4xl text-left">
           <p><strong>Your Answer:</strong> {transcript}</p>
-          
+
           {isGeneratingFeedback ? (
             <div className="mt-2 text-yellow-400">
-              <strong>AI Feedback:</strong> 
+              <strong>AI Feedback:</strong>
               <span className="ml-2 animate-pulse">Generating feedback...</span>
             </div>
           ) : feedback ? (
             <p className="mt-2"><strong>AI Feedback:</strong> {feedback}</p>
           ) : null}
-          
+
           {!isGeneratingFeedback && !feedback && (
-            <button 
+            <button
               onClick={() => generateFeedback(transcript)}
               className="mt-2 bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-700"
             >
