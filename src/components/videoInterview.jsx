@@ -305,15 +305,15 @@ const endCall = () => {
         answer: userAnswer.trim()
       });
       
-      const response = await axios.post('/check-answer', {
-        question: questions[currentQuestionIndex],
-        answer: userAnswer.trim()
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000 
-      });
+      const response = await axios.post('https://mockverse-backend-leqo.onrender.com/check-answer', {
+  question: questions[currentQuestionIndex],
+  answer: userAnswer.trim()
+}, {
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  timeout: 30000 
+});
       
       setFeedback(response.data.feedback);
       console.log("✅ Feedback received:", response.data.feedback);
