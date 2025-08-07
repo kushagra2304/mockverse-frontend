@@ -13,7 +13,7 @@ export default function Score() {
   useEffect(() => {
     const fetchScore = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/interview/score/${sessionId}`);
+        const res = await axios.get(`https://mockverse-backend-leqo.onrender.com/interview/score/${sessionId}`);
         setScoreData(res.data);
       } catch (error) {
         console.error("Failed to fetch score:", error);

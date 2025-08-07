@@ -20,7 +20,7 @@ export default function Signup() {
 
   const handleSignup = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/signup", form);
+      const res = await axios.post("https://mockverse-backend-leqo.onrender.com/api/signup", form);
       alert("Signup successful 🎉");
       navigate("/login"); 
     } catch (err) {
