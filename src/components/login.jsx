@@ -21,6 +21,7 @@ export default function Login() {
 
       if (res.status === 200) {
         login(res.data.user);
+        alert("Login successful 🎉");
         navigate("/");
       } else {
         alert("Invalid credentials");
