@@ -21,14 +21,13 @@ export default function Login() {
 
       if (res.status === 200) {
         login(res.data.user);
-        alert("Login successful 🎉");
         navigate("/");
       } else {
         alert("Invalid credentials");
       }
     } catch (err) {
       console.error("Login error:", err);
-      alert("Login failed. See console for details.");
+      alert("Login failed");
     }
   };
 

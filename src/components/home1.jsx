@@ -103,12 +103,12 @@ const Home = () => {
                   </Button>
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10 border">
-                      <button 
+                      {/* <button 
                         onClick={() => alert("Profile page coming soon!")} 
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-lg"
                       >
                         My Profile
-                      </button>
+                      </button> */}
                       <button 
                         onClick={handleLogout} 
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-lg"
@@ -304,7 +304,7 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => navigate("/setup")
-                
+
               }
               className="px-8 py-4 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 rounded-xl shadow-2xl transform hover:scale-105 transition-all"
             >

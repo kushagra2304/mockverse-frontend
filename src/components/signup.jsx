@@ -21,11 +21,10 @@ export default function Signup() {
   const handleSignup = async () => {
     try {
       const res = await axios.post("https://mockverse-backend-leqo.onrender.com/api/signup", form);
-      alert("Signup successful 🎉");
       navigate("/login"); 
     } catch (err) {
       console.error("Signup error:", err);
-      alert("Signup failed. Check console.");
+      alert("Signup failed. Please try again.");
     }
   };
 
