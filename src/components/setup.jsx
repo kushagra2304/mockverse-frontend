@@ -19,10 +19,12 @@ const InterviewSetup = () => {
 
     try {
       const sessionResponse = await axios.post("https://mockverse-backend-leqo.onrender.com/interview/start", {
+        // const sessionResponse = await axios.post("http://localhost:5000/interview/start", {
         user_id: user.id,
       });
       const { sessionId } = sessionResponse.data;
       const response = await axios.post("https://mockverse-backend-leqo.onrender.com/start-interview", {
+        // const response = await axios.post("http://localhost:5000/start-interview", {
         user_id: user.id,
         topic,
         difficulty,
