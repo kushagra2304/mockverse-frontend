@@ -4,6 +4,20 @@ import { v4 as uuid } from "uuid";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@/context/ContextAuth";
+import { 
+  Target, 
+  Video, 
+  VideoOff, 
+  Mic, 
+  MicOff, 
+  Phone, 
+  Play, 
+  Square,
+  Clock,
+  MessageSquare,
+  Sparkles,
+  AlertCircle
+} from "lucide-react";
 
 const QUESTION_TIME = 30;
 
@@ -23,10 +37,15 @@ const VideoInterview = () => {
   const [recognitionState, setRecognitionState] = useState('idle');
   const [isGeneratingFeedback, setIsGeneratingFeedback] = useState(false);
   const [questionTimer, setQuestionTimer] = useState(QUESTION_TIME);
+  const [isVisible, setIsVisible] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
   const questions = location.state?.questions || [];
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   // Responsive timer effect
   useEffect(() => {
@@ -186,6 +205,12 @@ const VideoInterview = () => {
     return () => clearTimeout(restartTimer);
   }, [recording, recognitionState, speechSupported]);
 
+  const toggleMic = () => {
+    if (!streamRef.current) return;
+    streamRef.current.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));
+    setMicOn((prev) => !prev);
+  };
+
   const toggleCamera = () => {
     if (!streamRef.current) return;
     streamRef.current.getVideoTracks().forEach((track) => (track.enabled = !track.enabled));
@@ -215,6 +240,7 @@ const VideoInterview = () => {
     }
     setRecording(true);
     setTranscript("");
+    setFeedback("");
     setRecognitionState('starting');
     if (recognitionRef.current) {
       try {
@@ -251,7 +277,6 @@ const VideoInterview = () => {
     setIsGeneratingFeedback(true);
     try {
       const response = await axios.post('https://mockverse-backend-leqo.onrender.com/check-answer', {
-        // const response = await axios.post('http://localhost:5000/check-answer', {
         question: questions[currentQuestionIndex],
         answer: userAnswer.trim()
       }, {
@@ -270,111 +295,363 @@ const VideoInterview = () => {
     }
   };
 
+  const getTimerColor = () => {
+    if (questionTimer <= 10) return "from-red-400 to-pink-500";
+    if (questionTimer <= 20) return "from-yellow-400 to-orange-500";
+    return "from-green-400 to-emerald-500";
+  };
+
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-start bg-black text-white px-2 py-4 overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Funky background pattern */}
+      <div className="fixed inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-40 right-10 w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/2 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Navbar */}
+      <nav className="sticky top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm border-b-4 border-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3 animate-slide-in-left">
+              <div className="relative">
+                <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center transform -rotate-6">
+                  <Target className="w-7 h-7 text-yellow-300" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+              <h2 className="text-3xl font-black text-black tracking-tight">
+                Mock<span className="text-purple-600">verse</span>
+              </h2>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <span className="font-black text-black">Live Interview</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Browser Support Warning */}
       {!speechSupported && (
-        <div className="mb-4 bg-red-600 p-3 rounded text-center w-full max-w-lg mx-auto">
-          <p>Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari for the best experience.</p>
+        <div 
+          className={`mx-4 mt-4 bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-500 rounded-2xl p-4 shadow-[6px_6px_0px_0px_rgba(239,68,68,1)] transition-all duration-700 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
+          }`}
+        >
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-black text-red-800 text-lg">Browser Not Supported</p>
+              <p className="text-red-700 font-bold mt-1">
+                Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari for the best experience.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Responsive layout for video and question */}
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl justify-center items-center md:items-start mt-4">
-        {/* Video */}
-        <div className="flex flex-col items-center w-full md:w-1/2">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            className="w-full max-w-xs sm:max-w-sm md:max-w-xs lg:max-w-sm aspect-video rounded-xl border-2 border-white"
-            style={{ background: "#222" }}
-          />
-          <p className="mt-2 text-sm">You</p>
-          {isListening && (
-            <div className="mt-2 bg-green-500 px-2 py-1 rounded text-xs animate-pulse">
-              🎤 Listening... (Speak now)
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+        {/* Progress Bar */}
+        <div 
+          className={`mb-8 transition-all duration-700 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
+          }`}
+        >
+          <div className="bg-white border-4 border-black rounded-2xl p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-black text-black">Question Progress</span>
+              <span className="font-bold text-gray-700">
+                {currentQuestionIndex + 1} / {questions.length}
+              </span>
             </div>
-          )}
-          {recording && !isListening && recognitionState === 'starting' && (
-            <div className="mt-2 bg-yellow-500 px-2 py-1 rounded text-xs animate-pulse">
-              ⏳ Starting listener...
+            <div className="w-full h-4 bg-gray-200 rounded-full border-2 border-black overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-400 to-blue-500 transition-all duration-500 rounded-full"
+                style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+              ></div>
             </div>
-          )}
-          {recording && !isListening && recognitionState === 'idle' && (
-            <div className="mt-2 bg-orange-500 px-2 py-1 rounded text-xs animate-pulse">
-              🔄 Restarting listener...
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Question */}
-        <div className="flex flex-col items-center w-full md:w-1/2">
-          <div className="w-full max-w-xs sm:max-w-sm md:max-w-xs lg:max-w-sm h-48 rounded-xl border-2 border-white bg-gray-800 flex items-center justify-center text-gray-200 text-base px-2 sm:px-4 text-center">
-            {questions.length > 0 ? (
-              <div className="w-full">
-                <div className="mb-2 text-xs sm:text-sm text-gray-400">
-                  ⏳ Time left: <span className="font-bold">{questionTimer}s</span>
+        {/* Video and Question Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Your Video */}
+          <div 
+            className={`transition-all duration-700 ${
+              isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+            }`}
+            style={{ transitionDelay: '200ms' }}
+          >
+            <div className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-black text-black flex items-center">
+                  <Video className="w-6 h-6 mr-2 text-purple-600" />
+                  Your Video
+                </h3>
+                {recording && (
+                  <div className="flex items-center space-x-2 px-3 py-1 bg-red-100 border-2 border-red-500 rounded-full animate-pulse">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="font-bold text-red-700 text-sm">REC</span>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  className="w-full aspect-video rounded-2xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-gray-900"
+                />
+                {!cameraOn && (
+                  <div className="absolute inset-0 bg-gray-900 rounded-2xl flex items-center justify-center">
+                    <VideoOff className="w-16 h-16 text-gray-500" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Listening Status */}
+              {isListening && (
+                <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 border-4 border-green-500 rounded-2xl p-3 shadow-[4px_4px_0px_0px_rgba(34,197,94,1)] animate-pulse">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Mic className="w-5 h-5 text-green-600 animate-bounce" />
+                    <span className="font-black text-green-800">Listening... Speak now!</span>
+                  </div>
                 </div>
-                <p className="mb-2 text-xs sm:text-sm text-gray-400">
-                  Question {currentQuestionIndex + 1} of {questions.length}
+              )}
+              
+              {recording && !isListening && recognitionState === 'starting' && (
+                <div className="mt-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-4 border-yellow-500 rounded-2xl p-3 shadow-[4px_4px_0px_0px_rgba(234,179,8,1)]">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Clock className="w-5 h-5 text-yellow-600 animate-spin" />
+                    <span className="font-black text-yellow-800">Starting listener...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Question Card */}
+          <div 
+            className={`transition-all duration-700 ${
+              isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'
+            }`}
+            style={{ transitionDelay: '400ms' }}
+          >
+            <div className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-black text-black flex items-center">
+                  <MessageSquare className="w-6 h-6 mr-2 text-blue-600" />
+                  Question
+                </h3>
+                <div className={`px-4 py-2 bg-gradient-to-r ${getTimerColor()} border-4 border-black rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-5 h-5 text-white" />
+                    <span className="font-black text-white text-lg">{questionTimer}s</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 border-4 border-black rounded-2xl p-6 flex items-center justify-center">
+                {questions.length > 0 ? (
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-gray-500 mb-4">
+                      Question {currentQuestionIndex + 1} of {questions.length}
+                    </p>
+                    <p className="text-xl md:text-2xl font-black text-black leading-relaxed">
+                      {questions[currentQuestionIndex]}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-lg font-black text-gray-600">Loading questions...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Control Panel */}
+        <div 
+          className={`mb-8 transition-all duration-700 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}
+          style={{ transitionDelay: '600ms' }}
+        >
+          <div className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h3 className="text-xl font-black text-black mb-4 text-center">Controls</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Camera Toggle */}
+              <button
+                onClick={toggleCamera}
+                className={`py-4 rounded-2xl font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center space-x-2 ${
+                  cameraOn ? 'bg-white text-black' : 'bg-red-500 text-white'
+                }`}
+              >
+                {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                <span className="hidden sm:inline">{cameraOn ? 'Camera On' : 'Camera Off'}</span>
+              </button>
+
+              {/* Mic Toggle */}
+              <button
+                onClick={toggleMic}
+                className={`py-4 rounded-2xl font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center space-x-2 ${
+                  micOn ? 'bg-white text-black' : 'bg-red-500 text-white'
+                }`}
+              >
+                {micOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                <span className="hidden sm:inline">{micOn ? 'Mic On' : 'Mic Off'}</span>
+              </button>
+
+              {/* Record Toggle */}
+              <button
+                onClick={recording ? stopRecording : startRecording}
+                disabled={!speechSupported}
+                className={`py-4 rounded-2xl font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center space-x-2 ${
+                  recording ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
+                } ${!speechSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {recording ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                <span className="hidden sm:inline">{recording ? 'Stop' : 'Answer'}</span>
+              </button>
+
+              {/* End Call */}
+              <button
+                onClick={endCall}
+                className="py-4 rounded-2xl font-black border-4 border-black bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center space-x-2"
+              >
+                <Phone className="w-5 h-5 transform rotate-135" />
+                <span className="hidden sm:inline">End</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Transcript */}
+        {recording && transcript && (
+          <div 
+            className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50 border-4 border-blue-500 rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(59,130,246,1)] animate-fade-in"
+          >
+            <h3 className="text-xl font-black text-blue-900 mb-4 flex items-center">
+              <MessageSquare className="w-6 h-6 mr-2" />
+              Live Transcript
+            </h3>
+            <p className="text-black font-medium text-lg leading-relaxed break-words">
+              {transcript}
+            </p>
+          </div>
+        )}
+
+        {/* Answer & Feedback Section */}
+        {transcript && !recording && (
+          <div 
+            className="bg-white border-4 border-black rounded-3xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-fade-in"
+          >
+            <h3 className="text-2xl font-black text-black mb-4 flex items-center">
+              <Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
+              Your Answer & Feedback
+            </h3>
+            
+            {/* Answer */}
+            <div className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 border-4 border-gray-300 rounded-2xl p-4">
+              <p className="font-bold text-gray-700 mb-2">Your Answer:</p>
+              <p className="text-black font-medium leading-relaxed break-words">
+                {transcript}
+              </p>
+            </div>
+
+            {/* Feedback */}
+            {isGeneratingFeedback ? (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-4 border-yellow-400 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(250,204,21,1)]">
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="w-8 h-8 border-4 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="font-black text-yellow-900 text-lg">AI is analyzing your answer...</span>
+                </div>
+              </div>
+            ) : feedback ? (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-4 border-green-500 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(34,197,94,1)]">
+                <p className="font-bold text-green-900 mb-3 text-lg flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  AI Feedback:
                 </p>
-                <p className="break-words">{questions[currentQuestionIndex]}</p>
+                <p className="text-black font-medium leading-relaxed">
+                  {feedback}
+                </p>
               </div>
             ) : (
-              <p>Loading questions...</p>
+              <button
+                onClick={() => generateFeedback(transcript)}
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-2xl font-black border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+              >
+                Get AI Feedback
+              </button>
             )}
           </div>
-          <p className="mt-2 text-sm">AI Interviewer</p>
-        </div>
+        )}
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full max-w-2xl justify-center">
-        <button onClick={toggleCamera} className={`px-4 py-2 rounded ${cameraOn ? 'bg-gray-800' : 'bg-red-600'} w-full sm:w-auto`}>
-          {cameraOn ? "📹 Camera On" : "📹 Camera Off"}
-        </button>
-        <button onClick={endCall} className="bg-red-600 px-4 py-2 rounded w-full sm:w-auto">
-          ❌ End Call
-        </button>
-        <button
-          onClick={recording ? stopRecording : startRecording}
-          className={`px-4 py-2 rounded ${recording ? 'bg-red-600' : 'bg-blue-600'} ${!speechSupported ? 'opacity-50 cursor-not-allowed' : ''} w-full sm:w-auto`}
-          disabled={!speechSupported}
-        >
-          {recording ? "⏹️ Stop Answer" : "🎤 Start Answer"}
-        </button>
-      </div>
-
-      {/* Transcript display */}
-      {recording && transcript && (
-        <div className="mt-4 bg-gray-700 p-3 rounded w-full max-w-2xl text-xs sm:text-sm">
-          <p className="text-gray-300">Current transcript:</p>
-          <p className="text-white break-words">{transcript}</p>
-        </div>
-      )}
-
-      {/* Transcript and Feedback */}
-      {transcript && !recording && (
-        <div className="mt-8 bg-gray-700 p-4 rounded w-full max-w-2xl text-left text-xs sm:text-base">
-          <p><strong>Your Answer:</strong> {transcript}</p>
-          {isGeneratingFeedback ? (
-            <div className="mt-2 text-yellow-400">
-              <strong>AI Feedback:</strong>
-              <span className="ml-2 animate-pulse">Generating feedback...</span>
-            </div>
-          ) : feedback ? (
-            <p className="mt-2"><strong>AI Feedback:</strong> {feedback}</p>
-          ) : null}
-          {!isGeneratingFeedback && !feedback && (
-            <button
-              onClick={() => generateFeedback(transcript)}
-              className="mt-2 bg-blue-600 px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-700"
-            >
-              Get Feedback
-            </button>
-          )}
-        </div>
-      )}
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        
+        @keyframes slide-in-left {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        
+        .animate-slide-in-left {
+          animation: slide-in-left 0.6s ease-out;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 };
