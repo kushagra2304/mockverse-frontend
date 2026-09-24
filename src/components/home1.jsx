@@ -199,7 +199,7 @@ const Home = () => {
                     Login
                   </Button>
                   <Button
-                    onClick={() => navigate("/setup")}
+                    onClick={() => navigate("/interview-mode")}
                     className="px-6 py-3 bg-yellow-300 text-black hover:bg-yellow-400 rounded-2xl font-bold border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                   >
                     Get Started
@@ -233,7 +233,7 @@ const Home = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16 animate-fade-in-up animation-delay-600">
               <Button
-                onClick={() => navigate("/setup")}
+                onClick={() => navigate("/interview-mode")}
                 className="px-10 py-6 text-xl bg-black text-white hover:bg-gray-800 rounded-2xl font-black border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[3px] hover:translate-y-[3px] hover:scale-105 transition-all group"
               >
                 <Play className="w-6 h-6 mr-2 group-hover:animate-pulse" />
@@ -467,7 +467,7 @@ const Home = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button
-              onClick={() => navigate("/setup")}
+              onClick={() => navigate("/interview-mode")}
               className="px-10 py-6 text-xl bg-black text-white hover:bg-gray-800 rounded-2xl font-black border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[3px] hover:translate-y-[3px] hover:scale-105 transition-all"
             >
               Start Your Free Interview
